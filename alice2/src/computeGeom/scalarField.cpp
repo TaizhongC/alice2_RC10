@@ -127,21 +127,7 @@ Vec3 ScalarField2D::cellPosition(int x, int y) const
     return m_grid_points[index];
 }
 
-float ScalarField2D::sample_nearest(const Vec3 &p) const
-{
-    float fx = (p.x - m_min_bounds.x) / (m_max_bounds.x - m_min_bounds.x) * (m_res_x - 1);
-    float fy = (p.y - m_min_bounds.y) / (m_max_bounds.y - m_min_bounds.y) * (m_res_y - 1);
-
-    int ix = std::round(fx);
-    int iy = std::round(fy);
-
-    ix = std::clamp(ix, 0, m_res_x - 1);
-    iy = std::clamp(iy, 0, m_res_y - 1);
-
-    return m_field_values[iy * m_res_x + ix];
-}
-
-Vec3 ScalarField2D::gradientAt(const Vec3 &p) const
+Vec3 ScalarField2D::get_gradient_at(const Vec3 &p) const
 {
     float eps = 1.0f;
     Vec3 a(p.x + eps, p.y, 0);
@@ -150,9 +136,33 @@ Vec3 ScalarField2D::gradientAt(const Vec3 &p) const
     Vec3 c(p.x, p.y + eps, 0);
     Vec3 d(p.x, p.y - eps, 0);
 
-    float dx = sample_nearest(a) - sample_nearest(b);
-    float dy = sample_nearest(c) - sample_nearest(d);
+    float dx = get_value_at(a) - get_value_at(b);
+    float dy = get_value_at(c) - get_value_at(d);
     return Vec3(dx, dy, 0.0f) * 0.5f;
+}
+
+int ScalarField2D::get_index_at(const Vec3 &p) const
+{    
+    // Map world-space point to grid coordinates
+    const float fx = (p.x - m_min_bounds.x) / (m_max_bounds.x - m_min_bounds.x) * (m_res_x - 1);
+    const float fy = (p.y - m_min_bounds.y) / (m_max_bounds.y - m_min_bounds.y) * (m_res_y - 1);
+
+    // Nearest integer grid cell
+    int ix = static_cast<int>(std::round(fx));
+    int iy = static_cast<int>(std::round(fy));
+
+    // Clamp to valid range
+    ix = std::clamp(ix, 0, m_res_x - 1);
+    iy = std::clamp(iy, 0, m_res_y - 1);
+
+    // Return flattened index
+    return iy * m_res_x + ix;
+}
+
+float ScalarField2D::get_value_at(const Vec3 &p) const
+{
+    const int id = get_index_at(p);
+    return m_is_normalized ? m_normalized_values[id] : m_field_values[id];
 }
 
 
@@ -603,6 +613,32 @@ void ScalarField2D::set_values(const std::vector<float>& values) {
         throw std::invalid_argument("Value array size must match field resolution");
     }
     m_field_values = values;
+}
+
+void ScalarField2D::applyTransform(const Mat4& matrix) {
+    for (auto& point : m_grid_points) {
+        point = matrix.transformPoint(point);
+    }
+
+    Vec3 minPt(std::numeric_limits<float>::max(),
+               std::numeric_limits<float>::max(),
+               std::numeric_limits<float>::max());
+    Vec3 maxPt(std::numeric_limits<float>::lowest(),
+               std::numeric_limits<float>::lowest(),
+               std::numeric_limits<float>::lowest());
+
+    for (const auto& point : m_grid_points) {
+        minPt.x = std::min(minPt.x, point.x);
+        minPt.y = std::min(minPt.y, point.y);
+        minPt.z = std::min(minPt.z, point.z);
+
+        maxPt.x = std::max(maxPt.x, point.x);
+        maxPt.y = std::max(maxPt.y, point.y);
+        maxPt.z = std::max(maxPt.z, point.z);
+    }
+
+    m_min_bounds = minPt;
+    m_max_bounds = maxPt;
 }
 
 void ScalarField2D::boolean_difference(const ScalarField2D& other) {

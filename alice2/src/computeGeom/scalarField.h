@@ -167,12 +167,14 @@ public:
     const std::vector<Vec3>& get_points() const { return m_grid_points; }
     const std::vector<float>& get_values() const { return m_is_normalized ? m_normalized_values : m_field_values; }
     void set_values(const std::vector<float>& values);
+    void applyTransform(const Mat4& matrix);
     std::pair<int, int> get_resolution() const { return {m_res_x, m_res_y}; }
     std::pair<Vec3, Vec3> get_bounds() const { return {m_min_bounds, m_max_bounds}; }
     
     Vec3 cellPosition(int x, int y) const;
-    float sample_nearest(const Vec3 &p) const;
-    Vec3 gradientAt(const Vec3 &p) const;
+    Vec3 get_gradient_at(const Vec3 &p) const;
+    int get_index_at(const Vec3 &p) const;
+    float get_value_at(const Vec3 &p) const;
 
     // Field generation methods (snake_case naming)
     void clear_field();
