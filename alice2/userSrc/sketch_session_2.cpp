@@ -6,8 +6,15 @@
 #include <alice2.h>
 #include <sketches/SketchRegistry.h>
 
+#include <computeGeom/scalarField.h>
+
 using namespace alice2;
 using namespace std;
+
+ScalarField2D myField(Vec3(-10, -10, 0), Vec3(10, 10, 0));
+
+bool d_points = false;
+bool d_values = false;
 
 class Session_2_Sketch : public ISketch {
 public:
@@ -22,6 +29,14 @@ public:
     }
 
     void draw(Renderer& renderer, Camera& camera) override {
+        if(d_points)
+        {
+            myField.draw_points(renderer, 1);
+        }
+        if(d_values)
+        {
+            myField.draw_values(renderer, 1);
+        }
     }
 
     void cleanup() override {
@@ -36,6 +51,12 @@ public:
             case 27: // ESC key
                 // Example: Exit application
                 return false; // Not handled - allow default exit
+            case 'p':
+                d_points = !d_points;
+                return true;
+            case 'v':
+                d_values = !d_values;
+                return true;
         }
         return false; // Not handled
     }
