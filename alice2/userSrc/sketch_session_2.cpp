@@ -11,7 +11,9 @@
 using namespace alice2;
 using namespace std;
 
-ScalarField2D myField(Vec3(-10, -10, 0), Vec3(10, 10, 0));
+Vec3 minBB(-10, -10, 0);
+Vec3 maxBB(10, 10, 0);
+ScalarField2D myField(minBB, maxBB);
 
 bool d_points = false;
 bool d_values = false;
@@ -23,6 +25,7 @@ public:
 
     // Sketch lifecycle
     void setup() override {
+        myField.apply_scalar_rect(Vec3(0, 0, 0), Vec3(5, 3, 0), 0);
     }
 
     void update(float deltaTime) override {
@@ -31,12 +34,15 @@ public:
     void draw(Renderer& renderer, Camera& camera) override {
         if(d_points)
         {
-            myField.draw_points(renderer, 1);
+            myField.draw_points(renderer, 2);
         }
         if(d_values)
         {
-            myField.draw_values(renderer, 1);
+            myField.draw_values(renderer, 2);
         }
+
+        renderer.setColor(Color(1, 0, 0));
+        myField.drawIsocontours(renderer, 0);
     }
 
     void cleanup() override {
@@ -56,6 +62,16 @@ public:
                 return true;
             case 'v':
                 d_values = !d_values;
+                return true;
+            case 'c':
+                // make a temporary field to host the circle
+                ScalarField2D temp(minBB, maxBB);
+                // add circle to the temp field
+                temp.apply_scalar_circle(Vec3(2, 3, 0), 2);
+                // use our original field to boolean union with the other,
+                // it will update our original field
+                myField.boolean_union(temp);
+                // myField.boolean_subtract(temp);
                 return true;
         }
         return false; // Not handled
