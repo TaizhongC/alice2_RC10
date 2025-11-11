@@ -14,6 +14,8 @@ using namespace std;
 Vec3 minBB(-10, -10, 0);
 Vec3 maxBB(10, 10, 0);
 ScalarField2D myField(minBB, maxBB);
+// make a temporary field to host the circle
+ScalarField2D temp(minBB, maxBB);
 
 bool d_points = false;
 bool d_values = false;
@@ -25,7 +27,8 @@ public:
 
     // Sketch lifecycle
     void setup() override {
-        myField.apply_scalar_rect(Vec3(0, 0, 0), Vec3(5, 3, 0), 0);
+        // myField.apply_scalar_rect(Vec3(0, 0, 0), Vec3(5, 3, 0), 0);
+        resetField();
     }
 
     void update(float deltaTime) override {
@@ -64,17 +67,32 @@ public:
                 d_values = !d_values;
                 return true;
             case 'c':
-                // make a temporary field to host the circle
-                ScalarField2D temp(minBB, maxBB);
                 // add circle to the temp field
-                temp.apply_scalar_circle(Vec3(2, 3, 0), 2);
+                // temp.apply_scalar_circle(Vec3(2, 3, 0), 2);
                 // use our original field to boolean union with the other,
                 // it will update our original field
+
+                resetField();
                 myField.boolean_union(temp);
                 // myField.boolean_subtract(temp);
                 return true;
+            case 't':
+                // add circle to the temp field
+                // temp.apply_scalar_circle(Vec3(2, 3, 0), 2);
+
+                resetField();
+                myField.boolean_smin(temp, 0.25);
+                return true;
         }
         return false; // Not handled
+    }
+
+    void resetField()
+    {
+        myField.clear_field();
+        myField.apply_scalar_rect(Vec3(0, 0, 0), Vec3(5, 3, 0), 0);
+        temp.clearField();
+        temp.apply_scalar_circle(Vec3(3, 3, 0), 3);
     }
 };
 
